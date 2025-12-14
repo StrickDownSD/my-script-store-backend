@@ -9,7 +9,11 @@ const PORT = process.env.PORT || 5000;
 
 // Allow both localhost definitions and user's specific IP if needed
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', '*', 'http://100.66.65.108:3000'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        return callback(null, true);
+    },
     credentials: true
 }));
 
