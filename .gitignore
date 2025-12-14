@@ -1,0 +1,20 @@
+# Environment files - NEVER push these
+.env
+.env.*
+.env.local
+.env.production
+
+# Database
+*.db
+prisma/dev.db
+
+# Logs
+*.log
+error.log
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/

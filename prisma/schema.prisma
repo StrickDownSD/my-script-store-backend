@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  firstName         String?
+  lastName          String?
+  username          String?        @unique
+  password          String
+  role              String         @default("USER") // USER, ADMIN
+  isVerified        Boolean        @default(false)
+  verificationToken String?
+  stripeCustomerId  String?        @unique
+  createdAt         DateTime       @default(now())
+  orders            Order[]
+  licenses          License[]
+  subscriptions     Subscription[]
+}
+
+model Script {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  category    String?  // Category for filtering: Daily Check-in, Automate Task, Automate Transaction, Node CLI, Refer Script
+  scriptType  String   @default("SINGLE") // SINGLE, PREMIUM, ADVANCE
+  price       Float
+  version     String
+  fileUrl     String   // Download link
+  imageUrl    String?  // Display image
+  createdAt   DateTime @default(now())
+  orders      Order[]
+  licenses    License[]
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  scriptId        String?
+  script          Script?  @relation(fields: [scriptId], references: [id])
+  amount          Float
+  status          String   // PENDING, COMPLETED, FAILED
+  paymentId       String?
+  stripeSessionId String?  @unique
+  planType        String?  // PREMIUM, ADVANCE (for subscriptions)
+  createdAt       DateTime @default(now())
+}
+
+model License {
+  id           String      @id @default(uuid())
+  key          String      @unique // Hashed or raw? Usually raw returned to user, hashed in DB? User said "stored hashed".
+  // But we need to show it to user once? Or we show it, then hash it? 
+  // If hashed, we can't show it again.
+  // Standard: Store Hash. Return Key once. 
+  // PROMPT: "License Key: 32-char UUID, stored hashed (bcrypt)"
+  keyHash      String
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  scriptId     String
+  script       Script      @relation(fields: [scriptId], references: [id])
+  deviceId     String?     // Locked device ID
+  deviceLimit  Int         @default(1) // Max devices allowed (1 = single phone)
+  status       String      @default("ACTIVE") // ACTIVE, REVOKED, EXPIRED
+  expiresAt    DateTime?
+  activations  Int         @default(0)
+  lastCheck    DateTime?
+  createdAt    DateTime    @default(now())
+  auditLogs    AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String?
+  ip        String?
+  licenseId String?
+  license   License? @relation(fields: [licenseId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  planType             String    // PREMIUM, ADVANCE
+  status               String    @default("ACTIVE") // ACTIVE, CANCELLED, EXPIRED, PAST_DUE
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model Plan {
+  id          String   @id @default(uuid())
+  name        String
+  price       String?
+  period      String?
+  description String?
+  features    String   // Stored as JSON string
+  buttonText  String
+  planType    String   @unique // SINGLE, PREMIUM, ADVANCE
+  popular     Boolean  @default(false)
+  color       String?  // CSS gradient class
+  updatedAt   DateTime @updatedAt
+}
