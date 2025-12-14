@@ -47,10 +47,8 @@ app.use('/api/plans', planRoutes); // Subscription plans
 // Serve static uploads (Note: specific to local dev, on Vercel these are read-only/ephemeral)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
-}
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 module.exports = app;
